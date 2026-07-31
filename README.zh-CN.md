@@ -12,60 +12,68 @@
 
 ![文章详情](https://s2.loli.net/2024/10/14/wohXZJK9BL4c7Hj.png)
 
-## 开发
+## 本地运行
 
-> [!TIP]
-> Node version >= 18
+### 环境要求
 
-启动开发服务器： `http://localhost:3000`
+- Node.js `18.20.x`，推荐使用项目 `.nvmrc` 中指定的 `18.20.3`
+- pnpm `9.x`，项目固定使用 `9.12.3`
+- 本项目仅使用 pnpm，请勿混用 npm、yarn 或 bun，也不要生成 `package-lock.json`、`yarn.lock`
 
-```bash
-# npm
-npm install
-npm run dev
-
-# pnpm
-pnpm install
-pnpm run dev
-
-# yarn
-yarn install
-yarn dev
-```
-
-## 生产
-
-构建用于生产的应用程序：
+### 首次安装
 
 ```bash
-# npm
-npm run build
+# 使用项目指定的 Node.js 版本
+nvm install
+nvm use
 
-# pnpm
-pnpm run build
+# 启用 Corepack 并激活项目指定的 pnpm
+corepack enable
+corepack prepare pnpm@9.12.3 --activate
 
-# yarn
-yarn build
-
-# bun
-bun run build
+# 严格按照 pnpm-lock.yaml 安装依赖
+pnpm install --frozen-lockfile
 ```
 
-本地预览生产构建：
+如果本地没有安装 nvm，请先安装 Node.js `18.20.3`，然后从 `corepack enable` 开始执行。
+
+### 启动开发服务器
 
 ```bash
-# npm
-npm run preview
-
-# pnpm
-pnpm run preview
-
-# yarn
-yarn preview
-
-# bun
-bun run preview
+pnpm dev
 ```
+
+访问 `http://localhost:3000`。
+
+### 代码检查
+
+```bash
+pnpm lint
+```
+
+### 生产构建
+
+```bash
+pnpm build
+```
+
+### 本地预览生产构建
+
+```bash
+pnpm preview
+```
+
+### 依赖异常时重装
+
+确认 Node.js 和 pnpm 版本正确后，重新执行：
+
+```bash
+node --version
+pnpm --version
+pnpm install --frozen-lockfile
+```
+
+不要删除或绕过 `pnpm-lock.yaml`。如果锁文件确实需要更新，应在 Node.js `18.20.3`、pnpm `9.12.3` 环境中执行 `pnpm install`，并一并提交锁文件变更。
 
 ## docker 部署
 

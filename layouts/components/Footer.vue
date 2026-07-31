@@ -11,20 +11,18 @@
 			</div>
 			<div class="link-git flex justify-center">
 				<span class="copyright">
-					Copyright © 2019-2024&nbsp;
+					Copyright © 2019-{{ currentYear }}&nbsp;
 					<a target="_blank" href="#">版权所有</a>&nbsp;
 				</span>
 				<span class="footer-github relative top-[2px]">
-					<Nuxt-Link to="https://github.com/haohaitao/nuxt3-website" target="_blank">
-						<Icon
-							icon="codicon:github-inverted"
-							:class="{
-								'text-[20px]': true,
-								'text-[#ffffff]': currentTheme === 'dark',
-								'text-[#000000]': currentTheme !== 'dark',
-							}"
-						/>
-					</Nuxt-Link>
+					<a
+						href="https://github.com/haohaitao/nuxt3-website"
+						target="_blank"
+						rel="noopener noreferrer"
+						aria-label="查看 GitHub 源码"
+					>
+						<Icon icon="codicon:github-inverted" class="text-[20px]" />
+					</a>
 				</span>
 			</div>
 			<!-- pc端显示 -->
@@ -38,26 +36,16 @@
 <script setup>
 import { Icon } from '@iconify/vue';
 
-const currentTheme = ref('');
+const currentYear = useState('footer-current-year', () => new Date().getFullYear());
+
 if (import.meta.client) {
 	// eslint-disable-next-line no-console
 	console.log(
-		'%cHello world! %c Copyright © 2024',
+		'%cHello world! %c Copyright © ' + currentYear.value,
 		' text-shadow: 0 1px 0 #ccc,0 2px 0 #c9c9c9,0 3px 0 #bbb,0 4px 0 #b9b9b9,0 5px 0 #aaa,0 6px 1px rgba(0,0,0,.1),0 0 5px rgba(0,0,0,.1),0 1px 3px rgba(0,0,0,.3),0 3px 5px rgba(0,0,0,.2),0 5px 10px rgba(0,0,0,.25),0 10px 10px rgba(0,0,0,.2),0 20px 20px rgba(0,0,0,.15);font-size:2em',
 		'font-size:12px;color:#999999;',
 	);
 }
-const handleStorageChange = (event) => {
-	if (event.key === 'theme-color') {
-		currentTheme.value = event.newValue;
-	}
-};
-onMounted(() => {
-	window.addEventListener('storage', handleStorageChange);
-});
-onUnmounted(() => {
-	window.removeEventListener('storage', handleStorageChange);
-});
 </script>
 
 <style lang="less" scoped>

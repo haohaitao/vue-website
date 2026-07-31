@@ -4,7 +4,7 @@
 			<p>
 				<img
 					style="width: 690px; height: 388px; margin: 0 auto"
-					src="https://www.haoht123.com/wp-content/uploads/2019/04/about20190403.jpg"
+					src="https://www.haohaitao.cn/wp-content/uploads/2019/04/about20190403.jpg"
 					alt="关于"
 				/>
 			</p>

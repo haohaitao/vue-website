@@ -14,60 +14,68 @@ English | [简体中文](README.zh-CN.md)
 
 ![Article details](https://s2.loli.net/2024/10/14/wohXZJK9BL4c7Hj.png)
 
-## Development
+## Local Development
 
-> [!TIP]
-> Node version >= 18
+### Requirements
 
-Start the development server on `http://localhost:3000`:
+- Node.js `18.20.x`; the project `.nvmrc` pins `18.20.3`
+- pnpm `9.x`; this project pins `9.12.3`
+- Use pnpm only. Do not mix npm, yarn, or bun, and do not generate `package-lock.json` or `yarn.lock`
 
-```bash
-# npm
-npm install
-npm run dev
-
-# pnpm
-pnpm install
-pnpm run dev
-
-# yarn
-yarn install
-yarn dev
-```
-
-## production
-
-Build the application for production:
+### First-time Setup
 
 ```bash
-# npm
-npm run build
+# Use the Node.js version specified by the project
+nvm install
+nvm use
 
-# pnpm
-pnpm run build
+# Enable Corepack and activate the pinned pnpm version
+corepack enable
+corepack prepare pnpm@9.12.3 --activate
 
-# yarn
-yarn build
-
-# bun
-bun run build
+# Install exactly what is recorded in pnpm-lock.yaml
+pnpm install --frozen-lockfile
 ```
 
-Locally preview production build:
+If nvm is unavailable, install Node.js `18.20.3` first and continue from `corepack enable`.
+
+### Start the Development Server
 
 ```bash
-# npm
-npm run preview
-
-# pnpm
-pnpm run preview
-
-# yarn
-yarn preview
-
-# bun
-bun run preview
+pnpm dev
 ```
+
+Open `http://localhost:3000`.
+
+### Lint
+
+```bash
+pnpm lint
+```
+
+### Production Build
+
+```bash
+pnpm build
+```
+
+### Preview the Production Build
+
+```bash
+pnpm preview
+```
+
+### Reinstall After Dependency Problems
+
+Verify the runtime versions and reinstall from the lockfile:
+
+```bash
+node --version
+pnpm --version
+pnpm install --frozen-lockfile
+```
+
+Do not delete or bypass `pnpm-lock.yaml`. If the lockfile must be updated, run `pnpm install` with Node.js `18.20.3` and pnpm `9.12.3`, then commit the lockfile changes together with `package.json`.
 
 ## docker Deployment
 

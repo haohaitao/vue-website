@@ -1,11 +1,36 @@
-FROM node:18.20.3-alpine
+FROM node:18.20.3-alpine AS base
 
-WORKDIR /home/nuxt-vue/default
+ENV PNPM_HOME="/pnpm"
+ENV PATH="$PNPM_HOME:$PATH"
+
+RUN corepack enable && corepack prepare pnpm@9.12.3 --activate
+
+WORKDIR /app
+
+FROM base AS dependencies
+
+COPY package.json pnpm-lock.yaml .npmrc ./
+RUN pnpm install --frozen-lockfile
+
+FROM base AS builder
+
+COPY --from=dependencies /app/node_modules ./node_modules
 COPY . .
 
-ENV NUXT_HOST=0.0.0.0
-ENV NUXT_PORT=3000
+RUN pnpm build
 
-EXPOSE 3000 
+FROM node:18.20.3-alpine AS production
 
-ENTRYPOINT ["node", ".output/server/index.mjs"]
+WORKDIR /app
+
+ENV NODE_ENV=production
+ENV NITRO_HOST=0.0.0.0
+ENV NITRO_PORT=3000
+
+COPY --from=builder --chown=node:node /app/.output ./.output
+
+USER node
+
+EXPOSE 3000
+
+CMD ["node", ".output/server/index.mjs"]

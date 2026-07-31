@@ -25,12 +25,7 @@ export default defineNuxtConfig({
 				},
 			],
 			style: [],
-			script: [
-				{
-					type: 'text/javascript',
-					src: 'https://webapi.amap.com/maps?v=1.4.15&key=b023d63b4c29817c75cd7427272eb7e5&plugin=AMap.CitySearch',
-				},
-			],
+			script: [],
 			noscript: [],
 		},
 	},
@@ -49,12 +44,10 @@ export default defineNuxtConfig({
 	compatibilityDate: '2024-04-03',
 	devtools: { enabled: true },
 	runtimeConfig: {
+		wordpressBaseUrl: 'https://www.haohaitao.cn',
 		public: {
 			isClient: true,
-		},
-		app: {
 			title: '郝海涛的个人网站',
-			BASE_URL: 'https://www.haoht123.com',
 		},
 	},
 	nitro: {},

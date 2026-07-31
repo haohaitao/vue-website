@@ -1,50 +1,6 @@
 <template>
 	<div>
-		<article v-if="Object.keys(blog).length > 0" class="detail-article">
-			<div class="art-header">
-				<h1>
-					{{ blog.title.rendered }}
-				</h1>
-				<div class="header-info">
-					<el-icon><ElIconNotebook /></el-icon>
-					{{ blog.category_name }}
-					<el-icon><ElIconCalendar /></el-icon>
-					{{ blog.post_date }}
-					<el-icon><ElIconView /></el-icon>
-					{{ blog.pageviews }}
-					<el-icon><ElIconChatDotSquare /></el-icon>
-					<span>{{ blog.total_comments }}</span>
-				</div>
-				<div class="header-tag">
-					<el-tag v-for="item in tagData" :key="item.id" @click="jumpTagDetails(item)">{{ item.name }}</el-tag>
-				</div>
-				<div class="tag-time">
-					<el-icon><ElIconCalendar /></el-icon>
-					{{ blog.date ? blog.date.split('T')['1'] : '1970-01-01' }}
-				</div>
-			</div>
-			<div id="blog-content" @click.stop="" v-html="blog.content.rendered" />
-			<div class="content-footer">
-				<p>
-					本文由
-					<nuxt-link to="/">{{ blog.author === 1 ? 'Hao' : '博主' }}</nuxt-link
-					>创作，转载请注明
-				</p>
-				<p>
-					最后编辑时间：{{
-						(blog.modified ? blog.modified.split('T')['0'] : '1970-01-01') +
-						' ' +
-						(blog.modified ? blog.modified.split('T')['1'] : '00:00:00')
-					}}
-				</p>
-				<div id="vcomments" />
-			</div>
-			<div class="comments">
-				<div @click="jumpTargetComments(blog)">发表评论</div>
-			</div>
-		</article>
-		<!-- 骨架屏占位 -->
-		<article v-else class="skeleton-wrap detail-article">
+		<article v-if="pending" class="skeleton-wrap detail-article">
 			<el-skeleton animated class="skeleton-wrap__item">
 				<template #template>
 					<div class="p-[14px]">
@@ -58,61 +14,161 @@
 						<div class="flex justify-end">
 							<el-skeleton-item variant="text" class="mt-[14px] mr-[16px]" style="width: 15%" />
 						</div>
-						<div>
-							<el-skeleton :rows="14" class="mt-[20px]" />
-						</div>
+						<el-skeleton :rows="14" class="mt-[20px]" />
 					</div>
 				</template>
 			</el-skeleton>
 		</article>
+
+		<article v-else-if="loadFailed" class="error-wrap detail-article">
+			<p>{{ errorMessage }}</p>
+			<el-button type="primary" @click="refreshArticle">重新加载</el-button>
+		</article>
+
+		<article v-else-if="blog" class="detail-article">
+			<div class="art-header">
+				<h1>{{ blog.title.rendered }}</h1>
+				<div class="header-info">
+					<el-icon><ElIconCalendar /></el-icon>
+					{{ formatDate(blog.date) }}
+					<el-icon><ElIconView /></el-icon>
+					{{ blog.views ?? 0 }}
+				</div>
+				<div v-if="tagData.length" class="header-tag">
+					<el-tag v-for="item in tagData" :key="item.id">{{ item.name }}</el-tag>
+				</div>
+				<div class="tag-time">
+					<el-icon><ElIconCalendar /></el-icon>
+					{{ formatTime(blog.date) }}
+				</div>
+			</div>
+			<div id="blog-content" v-html="blog.content.rendered" />
+			<div class="content-footer">
+				<p>
+					本文由
+					<nuxt-link to="/">{{ blog.author === 1 ? 'Hao' : '博主' }}</nuxt-link>
+					创作，转载请注明
+				</p>
+				<p>最后编辑时间：{{ formatDateTime(blog.modified) }}</p>
+				<div id="vcomments" />
+			</div>
+			<div class="comments">
+				<button type="button" @click="jumpTargetComments">发表评论</button>
+			</div>
+		</article>
 	</div>
 </template>
 
-<script setup>
-const route = useRoute();
-const router = useRouter();
-const postId = route.query.id;
-const blog = ref({});
-const tagData = ref([]); // 标签
+<script setup lang="ts">
+interface WordPressPost {
+	id: number;
+	author: number;
+	date: string;
+	modified: string;
+	link: string;
+	views?: number;
+	tags: number[];
+	title: { rendered: string };
+	excerpt: { rendered: string };
+	content: { rendered: string };
+}
 
-const initTagData = async (tags) => {
-	try {
-		if (tags.length > 0) {
-			tagData.value = []; //如果tags有内容，清空tagData
-			const promises = tags.map(async (item) => {
-				const response = await getPostsTagsApi(item);
-				return response.data;
+interface WordPressTag {
+	id: number;
+	name: string;
+}
+
+const route = useRoute();
+const getPostId = () => {
+	const queryId = Array.isArray(route.query.id) ? route.query.id[0] : route.query.id;
+	return typeof queryId === 'string' && /^\d+$/.test(queryId) ? queryId : '';
+};
+const initialPostId = getPostId();
+
+if (!initialPostId) {
+	throw createError({
+		statusCode: 400,
+		message: '无效的文章 ID',
+	});
+}
+
+const postId = computed(getPostId);
+const tagData = ref<WordPressTag[]>([]);
+let tagRequestId = 0;
+
+const { data, pending, error, refresh } = await useAsyncData(
+	`article-${initialPostId}`,
+	() => {
+		if (!postId.value) {
+			throw createError({
+				statusCode: 400,
+				message: '无效的文章 ID',
 			});
-			const results = await Promise.all(promises);
-			tagData.value = results;
 		}
-	} catch {
+
+		return getPostsDetailsApi(postId.value);
+	},
+	{
+		watch: [postId],
+	},
+);
+const blog = computed(() => data.value?.data as WordPressPost | undefined);
+
+const loadTags = async () => {
+	const requestId = ++tagRequestId;
+	const articleId = blog.value?.id;
+	const tagIds = blog.value?.tags || [];
+	if (!tagIds.length) {
 		tagData.value = [];
+		return;
 	}
+
+	const results = await Promise.allSettled(tagIds.map((tagId) => getPostsTagsApi(tagId)));
+	if (requestId !== tagRequestId || blog.value?.id !== articleId) {
+		return;
+	}
+
+	tagData.value = results.flatMap((result) =>
+		result.status === 'fulfilled' ? [result.value.data as WordPressTag] : [],
+	);
 };
 
-const { data } = await useAsyncData(`/article/${postId}`, () => getPostsDetailsApi(postId));
-const setTitle = data.value.data?.title?.rendered;
-const setDescription = data.value.data?.excerpt?.rendered;
-const setKeywords = data.value.data?.category_name;
+await loadTags();
+watch(
+	() => blog.value?.id,
+	() => {
+		void loadTags();
+	},
+);
+
 useSeoMeta({
-	title: setTitle,
-	keywords: setKeywords,
-	description: setDescription,
+	title: () => blog.value?.title.rendered || '文章详情',
+	description: () => blog.value?.excerpt.rendered || '',
 });
 
-const { categories, tags } = data.value.data;
-blog.value = data.value.data;
-blog.value.categories = categories['0'];
-initTagData(tags);
+const loadFailed = computed(() => Boolean(error.value) || !blog.value);
+const errorMessage = computed(() => {
+	if (!error.value && !blog.value) {
+		return '文章不存在或暂时无法访问';
+	}
+	return error.value?.message || error.value?.statusMessage || '文章加载失败，请稍后重试';
+});
 
-//跳转到标签分类页
-const jumpTagDetails = (item) => {
-	router.push({ path: '/tag', query: { tagId: item.id } });
+const formatDate = (date?: string) => {
+	return date ? date.split('T')[0].replaceAll('-', '.') : '日期未知';
 };
-// 跳转评论
-const jumpTargetComments = (data) => {
-	window.open(`${data.link}#single-widget`, '_blank');
+const formatTime = (date?: string) => date?.split('T')[1] || '时间未知';
+const formatDateTime = (date?: string) => (date ? date.replace('T', ' ') : '时间未知');
+
+const refreshArticle = async () => {
+	await refresh();
+	await loadTags();
+};
+
+const jumpTargetComments = () => {
+	if (blog.value?.link) {
+		window.open(`${blog.value.link}#single-widget`, '_blank', 'noopener,noreferrer');
+	}
 };
 </script>
 
@@ -128,6 +184,15 @@ const jumpTargetComments = (data) => {
 		box-sizing: border-box;
 		overflow: hidden;
 	}
+}
+.error-wrap {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	justify-content: center;
+	gap: 16px;
+	padding-top: 100px;
+	text-align: center;
 }
 article {
 	animation: fadeIn 0.6s linear;
@@ -155,21 +220,20 @@ article {
 		}
 
 		.header-info {
-			margin: 12px 0px 0;
+			margin: 12px 0 0;
 			display: flex;
 			align-items: center;
 			i {
 				&:not(:first-child) {
 					margin-left: 12px;
 				}
-
 				font-size: 14px;
 			}
 		}
 		.header-tag {
 			width: 85%;
 			margin-top: 14px;
-			height: 33px;
+			min-height: 33px;
 			span {
 				margin-right: 12px;
 			}
@@ -208,13 +272,19 @@ article {
 		background: var(--bg-color);
 		color: var(--text-color);
 		width: 100%;
-		margin: 0 10px 10px 0;
+		margin: 20px 10px 10px 0;
 		padding: 5px;
 		border: 1px solid #ddd;
 		border-radius: 2px;
 		text-align: center;
-		cursor: copy;
-		margin-top: 20px;
+
+		button {
+			width: 100%;
+			color: inherit;
+			background: transparent;
+			border: 0;
+			cursor: pointer;
+		}
 	}
 }
 #blog-content {
@@ -242,14 +312,5 @@ article {
 	:deep(ol li) {
 		list-style: decimal !important;
 	}
-}
-.drawerTitle {
-	padding: 20px 0 20px 30px;
-}
-.contentList {
-	padding: 0 0 20px 30px;
-}
-.contentList > a:hover {
-	color: #66b1ff !important;
 }
 </style>

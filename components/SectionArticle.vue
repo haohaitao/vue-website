@@ -1,59 +1,29 @@
 <template>
-    <section class="section-article" data-allow-mismatch>
-        <article v-for="(val, index) in blogShowList" :key="index">
-            <div class="bg-container">
-                <div
-                    data-allow-mismatch
-                    class="bg-img"
-                    :style="val.content_first_image ? setLink(val) : ''"
-                />
-            </div>
-            <div data-allow-mismatch class="bg-cover" @click="jumpDetail(val)">
-                <p v-html="val.excerpt" />
-            </div>
-            <div class="other-bgCover right-bgCover" />
-            <div class="other-bgCover" />
-            <div class="desc">
-                <p data-allow-mismatch class="title" :title="val.title">
-                    {{ val.title }}
-                </p>
-                <div class="desc-bottom">
-                    <div
-                        data-allow-mismatch
-                        :class="{ 'd-detail': true, 'hidden-detail': !val.id }"
-                    >
-                        <el-icon><ElIconTimer /></el-icon>
-                        <span
-                            data-allow-mismatch
-                            class="text-[14px] mr-[14px]"
-                            >{{ val.post_date }}</span
-                        >
-                        <el-icon><ElIconView /></el-icon>
-                        <span
-                            data-allow-mismatch
-                            class="text-[14px] mr-[14px]"
-                            >{{ val.pageviews }}</span
-                        >
-                        <el-icon><ElIconChatDotSquare /></el-icon>
-                        <span data-allow-mismatch class="text-[14px]">{{
-                            val.total_comments
-                        }}</span>
-                    </div>
-                    <nuxt-link to="/">
-                        <el-tooltip
-                            :content="val.category_name || '个人博客'"
-                            class="item"
-                            effect="dark"
-                            placement="top-end"
-                        >
-                            <Icon icon="codicon:tag" class="item-icon" />
-                        </el-tooltip>
-                    </nuxt-link>
+    <section class="section-article">
+        <template v-if="!pending && !errorMessage">
+            <article v-for="val in blogShowList" :key="val.id">
+                <div class="bg-container">
+                    <div class="bg-img" :style="featuredStyle(val)" />
                 </div>
-            </div>
-        </article>
-        <!-- 骨架屏占位 -->
-        <div v-if="blogShowList.length === 0" class="skeleton-wrap">
+                <div class="bg-cover" @click="jumpDetail(val)">
+                    <p>{{ excerptText(val.excerpt) }}</p>
+                </div>
+                <div class="other-bgCover right-bgCover" />
+                <div class="other-bgCover" />
+                <div class="desc">
+                    <p class="title" :title="val.title">{{ val.title }}</p>
+                    <div class="desc-bottom">
+                        <div class="d-detail">
+                            <el-icon><ElIconTimer /></el-icon>
+                            <span class="text-[14px] mr-[14px]">{{ formatDate(val.date) }}</span>
+                            <el-icon><ElIconView /></el-icon>
+                            <span class="text-[14px] mr-[14px]">{{ val.views ?? 0 }}</span>
+                        </div>
+                    </div>
+                </div>
+            </article>
+        </template>
+        <div v-if="pending" class="skeleton-wrap">
             <el-skeleton
                 v-for="item in 15"
                 :key="item"
@@ -89,43 +59,101 @@
                 </template>
             </el-skeleton>
         </div>
+        <div v-else-if="errorMessage" class="state-wrap">
+            <p>{{ errorMessage }}</p>
+            <el-button type="primary" @click="$emit('retry')">重新加载</el-button>
+        </div>
+        <div v-else-if="blogShowList.length === 0" class="state-wrap">
+            暂无文章
+        </div>
     </section>
 </template>
 
-<script setup>
-import { Icon } from "@iconify/vue";
+<script setup lang="ts">
+import type { CSSProperties, PropType } from "vue";
+
+interface ArticleItem {
+    id: number;
+    title: string;
+    excerpt: string;
+    content_first_image?: string;
+    content?: {
+        rendered?: string;
+    };
+    date?: string;
+    views?: number;
+    total_comments?: number;
+    category_name?: string;
+}
+
+const IMAGE_SRC_PATTERN = /<img\b[^>]*\bsrc\s*=\s*["']([^"']+)["']/i;
+const HTML_TAG_PATTERN = /<[^>]*>/g;
+const IMAGE_GRADIENT = "linear-gradient(0deg, rgba(24, 23, 20, 0.22), rgba(24, 23, 20, 0.04))";
 
 const initSeoConfig = useSeoConfigStore();
 const router = useRouter();
 const props = defineProps({
     blogList: {
-        //是否显示选择框
-        type: Array,
-        default: () => {
-            return [];
-        },
+        type: Array as PropType<ArticleItem[]>,
+        default: () => [],
+    },
+    pending: {
+        type: Boolean,
+        default: false,
+    },
+    errorMessage: {
+        type: String,
+        default: "",
     },
 });
 
-const blogShowList = ref([]); //列表数据
+defineEmits(["retry"]);
 
-const setLink = computed(() => (val) => {
-    return val.content_first_image
-        ? `background: url(${val.content_first_image}) 100% 100% / 100% 100%`
-        : "";
-});
+const blogShowList = computed(() => props.blogList);
 
-const jumpDetail = (val) => {
-    initSeoConfig.updateSeoConfig(val);
-    router.push(`/article?id=${val.id}`);
+const getArticleImage = (article: ArticleItem): string => {
+    if (article.content_first_image) {
+        return article.content_first_image;
+    }
+
+    return article.content?.rendered?.match(IMAGE_SRC_PATTERN)?.[1] ?? "";
 };
 
-watch(
-    () => props.blogList,
-    (newVal) => {
-        blogShowList.value = newVal;
-    }
-);
+const featuredStyle = (article: ArticleItem): CSSProperties => {
+    const image = getArticleImage(article);
+
+    return image
+        ? {
+              backgroundImage: `${IMAGE_GRADIENT}, url(${JSON.stringify(image)})`,
+              backgroundPosition: "center",
+              backgroundSize: "cover",
+          }
+        : {};
+};
+
+const formatDate = (date?: string) => {
+    return date ? date.split("T")[0].replaceAll("-", ".") : "日期未知";
+};
+
+const excerptText = (excerpt: string) => {
+    return excerpt
+        .replace(HTML_TAG_PATTERN, " ")
+        .replace(/&hellip;|&#8230;/gi, "…")
+        .replace(/&nbsp;/gi, " ")
+        .replace(/&amp;/gi, "&")
+        .replace(/&lt;/gi, "<")
+        .replace(/&gt;/gi, ">")
+        .replace(/&quot;|&#8220;|&#8221;/gi, '"')
+        .replace(/&#039;|&apos;/gi, "'")
+        .replace(/\s+/g, " ")
+        .trim();
+};
+
+const jumpDetail = (article: ArticleItem) => {
+    initSeoConfig.updateSeoConfig(article);
+    router.push(`/article?id=${article.id}`);
+};
+
 </script>
 
 <style lang="less" scoped>
@@ -309,6 +337,16 @@ section {
                 }
             }
         }
+    }
+
+    .state-wrap {
+        min-height: 280px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 16px;
+        color: var(--text-color);
     }
 
     .skeleton-wrap {
