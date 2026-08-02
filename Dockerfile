@@ -27,9 +27,12 @@ ENV NODE_ENV=production
 ENV NITRO_HOST=0.0.0.0
 ENV NITRO_PORT=3000
 
-COPY --from=builder --chown=node:node /app/.output ./.output
+RUN addgroup -S -g 10001 nuxt \
+    && adduser -S -D -H -u 10001 -G nuxt nuxt
 
-USER node
+COPY --from=builder --chown=10001:10001 /app/.output ./.output
+
+USER 10001:10001
 
 EXPOSE 3000
 
