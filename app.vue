@@ -32,10 +32,9 @@ useHead({
 }
 html {
 	cursor: url('~/assets/cur/pointer.cur'), default;
-	font-size: 12px;
+	font-size: 14px;
 }
 body {
-	font-size: 12px;
 	line-height: 1.5;
 	color: var(--text-color);
 	background-color: var(--bg-color);

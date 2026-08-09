@@ -3,7 +3,7 @@
 		<div class="container">
 			<!-- 需要用到的竖线使用全角竖线｜ -->
 			<div class="flex items-center justify-center">
-				<a href="http://www.beian.miit.gov.cn/" target="_blank">豫ICP备17023037号-1</a>
+				<a href="https://beian.miit.gov.cn/" target="_blank">豫ICP备17023037号</a>
 				<!-- 移动端显示 -->
 				<el-backtop class="mobile-back">
 					<div>返回顶部</div>
@@ -11,8 +11,7 @@
 			</div>
 			<div class="link-git flex justify-center">
 				<span class="copyright">
-					Copyright © 2019-{{ currentYear }}&nbsp;
-					<a target="_blank" href="#">版权所有</a>&nbsp;
+					Copyright © 2019-{{ currentYear }}&nbsp; <a target="_blank" href="#">版权所有</a>&nbsp;
 				</span>
 				<span class="footer-github relative top-[2px]">
 					<a
