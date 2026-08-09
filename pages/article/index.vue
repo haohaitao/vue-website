@@ -299,13 +299,6 @@ article {
 		font-weight: bold;
 		border-left: 5px solid #e40000;
 	}
-	:deep(code) {
-		background: #fee;
-		color: #555;
-		margin: auto 3px;
-		padding: 2px 4px;
-		border-radius: 5px;
-	}
 	:deep(img) {
 		max-width: 100%;
 	}

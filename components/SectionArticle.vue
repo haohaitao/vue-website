@@ -1,11 +1,18 @@
 <template>
     <section class="section-article">
         <template v-if="!pending && !errorMessage">
-            <article v-for="val in blogShowList" :key="val.id">
+            <article
+                v-for="val in blogShowList"
+                :key="val.id"
+                role="link"
+                tabindex="0"
+                @click="jumpDetail(val)"
+                @keyup.enter="jumpDetail(val)"
+            >
                 <div class="bg-container">
                     <div class="bg-img" :style="featuredStyle(val)" />
                 </div>
-                <div class="bg-cover" @click="jumpDetail(val)">
+                <div class="bg-cover">
                     <p>{{ excerptText(val.excerpt) }}</p>
                 </div>
                 <div class="other-bgCover right-bgCover" />
@@ -150,8 +157,17 @@ const excerptText = (excerpt: string) => {
 };
 
 const jumpDetail = (article: ArticleItem) => {
+    if (!article.id) {
+        return;
+    }
+
     initSeoConfig.updateSeoConfig(article);
-    router.push(`/article?id=${article.id}`);
+    router.push({
+        path: "/article",
+        query: {
+            id: String(article.id),
+        },
+    });
 };
 
 </script>
@@ -170,6 +186,7 @@ section {
         position: relative;
         border-radius: 5px;
         background: rgba(255, 255, 255, 0.5);
+        cursor: pointer;
         box-sizing: border-box;
         margin: 20px;
         box-shadow: 0 2px 9px 0 rgba(0, 0, 0, 0.08);

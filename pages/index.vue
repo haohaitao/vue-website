@@ -1,13 +1,8 @@
 <template>
 	<div class="animated bounce">
 		<main>
-			<p style="color: var(--text-color)">今天是 {{ time }}，欢迎访问我的个人网站！</p>
-			<SectionArticle
-				:blog-list="blogList"
-				:pending="pending"
-				:error-message="errorMessage"
-				@retry="refreshList"
-			/>
+			<p style="color: var(--text-color)">今天是 {{ time }}，欢迎访问我的个人网站</p>
+			<SectionArticle :blog-list="blogList" :pending="pending" :error-message="errorMessage" @retry="refreshList" />
 			<div v-if="!pending && !error && total > pageSize" class="pagination-wrap">
 				<el-pagination
 					v-model:current-page="currentPage"

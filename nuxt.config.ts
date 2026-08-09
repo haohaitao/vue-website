@@ -23,9 +23,27 @@ export default defineNuxtConfig({
 					type: 'image/x-icon',
 					href: '/favicon.ico',
 				},
+				{
+					rel: 'shortcut icon',
+					type: 'image/x-icon',
+					href: '/favicon.ico',
+				},
+				{
+					rel: 'stylesheet',
+					href: 'https://img.haohaitao.cn/code-highlight/v1.0.0/code-highlight.css',
+				},
 			],
 			style: [],
-			script: [],
+			script: [
+				{
+					src: 'https://img.haohaitao.cn/code-highlight/v1.0.0/highlight.min.js',
+					defer: true,
+				},
+				{
+					src: 'https://img.haohaitao.cn/code-highlight/v1.0.0/code-highlight.js',
+					defer: true,
+				},
+			],
 			noscript: [],
 		},
 	},
@@ -33,14 +51,7 @@ export default defineNuxtConfig({
 		url: siteConfig.url,
 		name: '郝海涛的个人网站',
 	},
-	css: [
-		'~/assets/animate.css',
-		'~/assets/highlight.css',
-		'~/assets/themes.css',
-		'element-plus/dist/index.css',
-		'element-plus/theme-chalk/display.css',
-		'element-plus/theme-chalk/dark/css-vars.css',
-	],
+	css: ['~/assets/animate.css', '~/assets/themes.css', 'element-plus/theme-chalk/display.css'],
 	compatibilityDate: '2024-04-03',
 	devtools: { enabled: true },
 	runtimeConfig: {
@@ -51,9 +62,14 @@ export default defineNuxtConfig({
 		},
 	},
 	nitro: {},
+	elementPlus: {
+		importStyle: 'css',
+		themes: ['dark'],
+		defaultLocale: 'zh-cn',
+		cache: true,
+	},
 	modules: [
 		'@element-plus/nuxt',
-		'dayjs-nuxt',
 		'@nuxt/eslint',
 		'@nuxtjs/tailwindcss',
 		[
